@@ -867,7 +867,7 @@ def generate_input_feature(
     is_complex: bool,
     model_type: str,
     max_seq: int,
-    cyclic_peptide=args.cyclic_peptide, #cyclic
+    cyclic_peptide: bool = False #cyclic
 ) -> Tuple[Dict[str, Any], Dict[str, str]]:
 
     input_feature = {}
@@ -888,11 +888,6 @@ def generate_input_feature(
         input_feature = build_monomer_feature(full_sequence, a3m_lines, mk_mock_template(full_sequence))
         input_feature["residue_index"] = np.concatenate([np.arange(L) for L in Ls])
         input_feature["asym_id"] = np.concatenate([np.full(L,n) for n,L in enumerate(Ls)])
-
-        # === CYCLIC PEPTIDE SUPPORT ===
-        if cyclic_peptide:
-            input_feature["offset"] = make_cyclic_offset(input_feature["residue_index"], Ls)
-        # ==============================
         
         if any(
             [
@@ -954,6 +949,14 @@ def generate_input_feature(
                     if name != b"none"
                 ]
             }
+        # === CYCLIC PEPTIDE SUPPORT ===
+        if cyclic_peptide:
+            if len(Ls) == 0:
+                Ls = [len(input_feature["residue_index"])]
+            input_feature["offset"] = make_cyclic_offset(
+                input_feature["residue_index"], Ls
+            )
+        # ==============================
     return (input_feature, domain_names)
 
 def normalize_a3m(lines: list[str]) -> list[str]:
