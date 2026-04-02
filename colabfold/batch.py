@@ -949,14 +949,17 @@ def generate_input_feature(
                     if name != b"none"
                 ]
             }
-        # === CYCLIC PEPTIDE SUPPORT ===
-        if cyclic_peptide:
-            if len(Ls) == 0:
-                Ls = [len(input_feature["residue_index"])]
-            input_feature["offset"] = make_cyclic_offset(
-                input_feature["residue_index"], Ls
-            )
-        # ==============================
+            
+    # === CYCLIC PEPTIDE SUPPORT ===
+    if cyclic_peptide:
+        # Ls only exists in the complex branch; create it safely for monomer runs
+        if 'Ls' not in locals() or len(Ls) == 0:
+            Ls = [len(input_feature["residue_index"])]
+        input_feature["offset"] = make_cyclic_offset(
+            input_feature["residue_index"], Ls
+        )
+    # ==============================
+
     return (input_feature, domain_names)
 
 def normalize_a3m(lines: list[str]) -> list[str]:
