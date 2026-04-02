@@ -1,18 +1,14 @@
 ARG MMSEQS_HASH=archive/8cc5ce367b5638c4306c2d7cfc652dd099a4643f
 ARG downloader=${TARGETARCH}_downloader
-
 FROM scratch AS amd64_downloader
 ARG MMSEQS_HASH
 WORKDIR /opt/build
-ONBUILD ADD https://mmseqs.com/${MMSEQS_HASH}/mmseqs-linux-gpu.tar.gz  .
-
+ONBUILD ADD https://mmseqs.com/${MMSEQS_HASH}/mmseqs-linux-gpu.tar.gz .
 FROM scratch AS arm64_downloader
 ARG MMSEQS_HASH
 WORKDIR /opt/build
-ONBUILD ADD https://mmseqs.com/${MMSEQS_HASH}/mmseqs-linux-gpu-arm64.tar.gz  .
-
+ONBUILD ADD https://mmseqs.com/${MMSEQS_HASH}/mmseqs-linux-gpu-arm64.tar.gz .
 FROM $downloader AS downloader
-
 FROM debian:trixie-slim AS builder
 WORKDIR /opt/build
 COPY --from=downloader /opt/build/* .
@@ -24,19 +20,15 @@ RUN mkdir binaries; \
         fi; \
     done; \
     chmod -R +x binaries;
-
 FROM debian:trixie-slim
-
 VOLUME cache
 ENV MPLBACKEND=Agg
 ENV MPLCONFIGDIR=/cache
 ENV XDG_CACHE_HOME=/cache
 ENV CONDA_VERSION=25.9.1-0
-
 RUN apt-get update; \
     apt-get install -y wget git --no-install-suggests; \
     rm -rf /var/lib/apt/lists/*;
-
 SHELL ["/bin/bash", "--login", "-x", "-c"]
 RUN wget -qnc https://github.com/conda-forge/miniforge/releases/download/${CONDA_VERSION}/Miniforge3-${CONDA_VERSION}-Linux-x86_64.sh; \
     bash Miniforge3-${CONDA_VERSION}-Linux-x86_64.sh -bfp /usr/local; \
@@ -46,11 +38,18 @@ RUN wget -qnc https://github.com/conda-forge/miniforge/releases/download/${CONDA
     conda clean -afy; \
     conda shell.bash hook;
 COPY --from=builder /opt/build/binaries/* /usr/local/bin/
-
 WORKDIR /app
 COPY . /app
+# === cyclic peptide patch ===
+COPY patches/modules.py /tmp/patched_modules.py
 RUN pip install --no-cache-dir \
-        ".[alphafold,openmm]" \
+        .[alphafold,openmm] \
         "jax[cuda]<0.8" \
-        "openmm[cuda12]"; \
-    rm -rf /root/.cache/pip
+        "openmm[cuda12]" && \
+    rm -rf /root/.cache/pip && \
+    # === Apply patch: overwrite the installed modules.py ===
+    find /usr/local/lib -type f -path "*/site-packages/alphafold/model/modules.py" \
+         -exec cp -v /tmp/patched_modules.py {} \; && \
+    # Optional: clean up temp file
+    rm -f /tmp/patched_modules.py
+    # ====================================
