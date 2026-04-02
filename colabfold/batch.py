@@ -867,6 +867,7 @@ def generate_input_feature(
     is_complex: bool,
     model_type: str,
     max_seq: int,
+    cyclic_peptide=args.cyclic_peptide, #cyclic
 ) -> Tuple[Dict[str, Any], Dict[str, str]]:
 
     input_feature = {}
@@ -887,6 +888,12 @@ def generate_input_feature(
         input_feature = build_monomer_feature(full_sequence, a3m_lines, mk_mock_template(full_sequence))
         input_feature["residue_index"] = np.concatenate([np.arange(L) for L in Ls])
         input_feature["asym_id"] = np.concatenate([np.full(L,n) for n,L in enumerate(Ls)])
+
+        # === CYCLIC PEPTIDE SUPPORT ===
+        if cyclic_peptide:
+            input_feature["offset"] = make_cyclic_offset(input_feature["residue_index"], Ls)
+        # ==============================
+        
         if any(
             [
                 template != b"none"
@@ -1740,6 +1747,27 @@ def generate_af3_input(
             logger.exception(f"Failed to generate AF3 input json for {jobname}: Could not get MSA/templates. {e}")
             continue
 
+# === CYCLIC OFFSET HELPERS ===
+def make_cyclic_offset(residue_index, lengths):
+    offset = np.array(residue_index[:, None] - residue_index[None, :], dtype=np.float32)
+    Ln = 0
+    for L in lengths:
+        if L > 5:
+            c_offset = cyclic_offset_matrix(L)
+            offset[Ln:Ln+L, Ln:Ln+L] = c_offset
+        Ln += L
+    return offset
+
+def cyclic_offset_matrix(L):
+    i = np.arange(L)
+    ij = np.stack([i, i + L], -1)
+    base_offset = i[:, None] - i[None, :]
+    c_offset = np.abs(ij[:, None, :, None] - ij[None, :, None, :]).min((2, 3))
+    a = c_offset < np.abs(base_offset)
+    c_offset[a] = -c_offset[a]
+    return c_offset * np.sign(base_offset)
+# ===============================
+
 def main():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument(
@@ -1950,6 +1978,13 @@ def main():
         action="store_true",
         help="Experimental: instead of contact probabilities form use binary contacts for extra metrics calculation",
     )
+    # === Cyclic Arg ===
+    pred_group.add_argument(
+        "--cyclic-peptide",
+        action="store_true",
+        help="Enable cyclic offset for peptides (applies head-to-tail cyclization in relative positional encoding for peptide chains)",
+    )
+    # ===================
     pred_group.add_argument("--data", help="Path to AlphaFold2 weights directory.")
 
     relax_group = parser.add_argument_group("Relaxation arguments", "")
