@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.4
+
 ARG MMSEQS_HASH=archive/8cc5ce367b5638c4306c2d7cfc652dd099a4643f
 ARG downloader=${TARGETARCH}_downloader
 
@@ -38,17 +40,14 @@ RUN apt-get update; \
 
 SHELL ["/bin/bash", "--login", "-x", "-c"]
 
-# ========================
-# CACHED MINIFORGE DOWNLOAD
-# ========================
-# OLD: RUN wget -qnc https://github.com/conda-forge/miniforge/releases/download/${CONDA_VERSION}/Miniforge3-${CONDA_VERSION}-Linux-x86_64.sh; \
-#      bash ... ; rm ...
-RUN if [ ! -f /cache/Miniforge3-${CONDA_VERSION}-Linux-x86_64.sh ]; then \
+# CACHED MINIFORGE
+RUN --mount=type=bind,source=/c/colabfold_cache,target=/cache \
+    if [ ! -f /cache/Miniforge3-${CONDA_VERSION}-Linux-x86_64.sh ]; then \
         echo "Downloading Miniforge to host cache..."; \
         wget -qnc -O /cache/Miniforge3-${CONDA_VERSION}-Linux-x86_64.sh \
             https://github.com/conda-forge/miniforge/releases/download/${CONDA_VERSION}/Miniforge3-${CONDA_VERSION}-Linux-x86_64.sh; \
     else \
-        echo "Using Miniforge from host cache C:\colabfold_cache"; \
+        echo "Using Miniforge from host cache C:/colabfold_cache"; \
     fi; \
     cp /cache/Miniforge3-${CONDA_VERSION}-Linux-x86_64.sh .; \
     bash Miniforge3-${CONDA_VERSION}-Linux-x86_64.sh -bfp /usr/local; \
@@ -62,21 +61,17 @@ COPY --from=builder /opt/build/binaries/* /usr/local/bin/
 WORKDIR /app
 COPY . /app
 
-# === cyclic peptide patch ===
+# cyclic peptide patch
 COPY patches/modules.py /tmp/patched_modules.py
 
-# ========================
-# CACHED PIP DOWNLOAD
-# ========================
-# OLD: RUN pip install --no-cache-dir ...
-RUN mkdir -p /cache/pip && \
+# CACHED PIP (the long step)
+RUN --mount=type=bind,source=/c/colabfold_cache,target=/cache \
+    mkdir -p /cache/pip && \
     pip install --cache-dir /cache/pip \
         .[alphafold,openmm] \
         "jax[cuda]<0.8" \
         "openmm[cuda12]" && \
     rm -rf /root/.cache/pip && \
-    # === Apply patch: overwrite the installed modules.py ===
     find /usr/local/lib -type f -path "*/site-packages/alphafold/model/modules.py" \
          -exec cp -v /tmp/patched_modules.py {} \; && \
-    # Optional: clean up temp file
     rm -f /tmp/patched_modules.py
