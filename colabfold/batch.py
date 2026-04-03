@@ -958,6 +958,9 @@ def generate_input_feature(
         input_feature["offset"] = make_cyclic_offset(
             input_feature["residue_index"], Ls
         )
+    # Force correct shape for 'seq_length' in modules.py (ensembled_batch['seq_length'].shape[0] == 1)
+    if 'seq_length' not in input_feature or len(input_feature["seq_length"].shape) == 0 or input_feature["seq_length"].shape[0] != 1:
+        input_feature["seq_length"] = np.array([len(input_feature["residue_index"])], dtype=np.int32)
     # ==============================
 
     return (input_feature, domain_names)
