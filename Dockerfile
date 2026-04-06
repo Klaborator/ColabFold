@@ -65,7 +65,7 @@ COPY . /app
 COPY patches/modules.py /tmp/patched_modules.py
 
 # CACHED PIP (the long step)
-RUN --mount=type=bind,source=/c/colabfold_cache,target=/cache \
+RUN --mount=type=bind,source=C:/colabfold_cache,target=/cache \
     mkdir -p /cache/pip && \
     pip install --cache-dir /cache/pip \
         .[alphafold,openmm] \
