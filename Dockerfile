@@ -74,4 +74,7 @@ RUN --mount=type=bind,source=/c/colabfold_cache,target=/cache \
     rm -rf /root/.cache/pip && \
     find /usr/local/lib -type f -path "*/site-packages/alphafold/model/modules.py" \
          -exec cp -v /tmp/patched_modules.py {} \; && \
+    find /usr/local/lib -type f -path "*/site-packages/alphafold/model/tf/protein_features.py" \
+         -exec cp -v /patches/tf/protein_features.py {} \; && \
+    \
     rm -f /tmp/patched_modules.py
