@@ -41,7 +41,7 @@ RUN apt-get update; \
 SHELL ["/bin/bash", "--login", "-x", "-c"]
 
 # CACHED MINIFORGE
-RUN --mount=type=bind,source=/c/colabfold_cache,target=/cache \
+RUN --mount=type=cache,id=colabfold-cache,target=/cache \
     if [ ! -f /cache/Miniforge3-${CONDA_VERSION}-Linux-x86_64.sh ]; then \
         echo "Downloading Miniforge to host cache..."; \
         wget -qnc -O /cache/Miniforge3-${CONDA_VERSION}-Linux-x86_64.sh \
@@ -65,7 +65,7 @@ COPY . /app
 COPY patches/modules.py /tmp/patched_modules.py
 
 # CACHED PIP (the long step)
-RUN --mount=type=bind,source=C:/colabfold_cache,target=/cache \
+RUN --mount=type=cache,id=colabfold-pip,target=/root/.cache/pip \
     mkdir -p /cache/pip && \
     pip install --cache-dir /cache/pip \
         .[alphafold,openmm] \
