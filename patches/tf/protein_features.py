@@ -46,7 +46,7 @@ FEATURES = {
     "between_segment_residues": (tf.int64, [NUM_RES, 1]),
     "deletion_matrix": (tf.float32, [NUM_SEQ, NUM_RES, 1]),
     "domain_name": (tf.string, [1]),
-    "offset": (tf.float32, [NUM_RES, NUM_RES]),
+    "offset": (tf.float32, [NUM_RES, NUM_RES]), #cyclic offset
     "msa": (tf.int64, [NUM_SEQ, NUM_RES, 1]),
     "num_alignments": (tf.int64, [NUM_RES, 1]),
     "residue_index": (tf.int64, [NUM_RES, 1]),
