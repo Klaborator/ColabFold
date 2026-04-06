@@ -34,9 +34,13 @@ ENV MPLCONFIGDIR=/cache
 ENV XDG_CACHE_HOME=/cache
 ENV CONDA_VERSION=25.9.1-0
 
-RUN apt-get update; \
-    apt-get install -y wget git --no-install-suggests; \
-    rm -rf /var/lib/apt/lists/*;
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        wget \
+        git \
+        ca-certificates \
+        bzip2 && \
+    rm -rf /var/lib/apt/lists/*
 
 SHELL ["/bin/bash", "--login", "-x", "-c"]
 
