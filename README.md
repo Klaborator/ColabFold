@@ -1,3 +1,5 @@
+I'm still trying to get this to work, don't use it.
+
 # ColabFold - v1.6.1
 
 For details of what was changed in v1.6.1, see [change log](https://github.com/sokrypton/ColabFold/wiki/v1.6.1)!
