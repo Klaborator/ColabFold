@@ -957,8 +957,6 @@ def generate_input_feature(
         input_feature["offset"] = make_cyclic_offset(
             input_feature["residue_index"], Ls
         )
-    L = len(input_feature.get("residue_index", []))
-    input_feature["seq_length"] = np.full((L, 1), L, dtype=np.int32)
     # ==============================
 
     return (input_feature, domain_names)
@@ -1234,6 +1232,7 @@ def run(
     use_probs_extra: bool = True,
     max_template_date: str = "2100-01-01",
     max_template_hits: int = 20,
+    cyclic_peptide: bool = False, #cyclic
     **kwargs
 ):
     # check what device is available
@@ -1481,7 +1480,7 @@ def run(
         try:
             (feature_dict, domain_names) \
             = generate_input_feature(query_seqs_unique, query_seqs_cardinality, unpaired_msa, paired_msa,
-                                     template_features, is_complex, model_type, max_seq=max_seq)
+                                     template_features, is_complex, model_type, max_seq=max_seq, cyclic_peptide=cyclic_peptide) #cyclic
 
             # to allow display of MSA info during colab/chimera run (thanks tomgoddard)
             if feature_dict_callback is not None:
@@ -2291,6 +2290,7 @@ def main():
         use_probs_extra=use_probs_extra,
         max_template_date=args.max_template_date,
         max_template_hits=args.max_template_hits,
+        cyclic_peptide=args.cyclic_peptide, #cyclic
     )
 
 if __name__ == "__main__":
